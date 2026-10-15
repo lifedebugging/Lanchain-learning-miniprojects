@@ -1,3 +1,8 @@
+# Janus
+
+The reason Janus exist because of the itch
+of creating things from scratch to understand **why** behind everything. 
+
 # ⚠️ Deprecated Prototype (Formerly Janus)
 
 > **Status:** Archived & Unsupported
