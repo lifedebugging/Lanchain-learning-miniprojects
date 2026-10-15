@@ -79,6 +79,8 @@ async def lifespan(app: FastAPI):
             )
         agent_lookup[tier] = agent
         
+    
+        
         
     #loading fasttext langdetect model (requires to load only once)
     lang_model= load_model(str(MODEL_PATH))

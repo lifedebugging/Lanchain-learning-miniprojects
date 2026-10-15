@@ -166,3 +166,83 @@ This is a guranteed fallback state
 if everything fails this will make sure it doesn't break down in the middle but routes safely.
 
 
+
+26/7
+
+Updated `safe_llm_cassifier`:
+
+1. Using strucutred output with `.with_structured_output`
+2. it protects SLA (service level agreement) by inforcing hard latency celing `.wait_for` with timeout out 2 seconds
+3. graceful error and fallback boundaries *with `try/except` block*
+
+```
+except asyncio.TimeoutError:
+        logger.warning(f"Classifier timed out (> {timeout}s). Falling back to default.")
+        return StrictOutput(model_type="Fast", tool="None") # Safe default fallback
+        
+    except (ValidationError, Exception) as e:
+        logger.error(f"Classifier output parsing error: {e}")
+        return StrictOutput(model_type="Fast", tool="None")  # Safe error fallback
+```
+Using `ValidationERror` from `Pydantic` which validates if the output is strictly validated provide fail safe and fast mechanism 
+and returning `return StrictOutput(model_type="Fast", tool="None")` to fallback.
+
+
+
+## Final Decision logic
+
+it's almost same with few tweaks:
+
+```
+if length_tier != QueryLength.LONG:
+            
+            tasks = [
+                keyword_intent(normalized),
+                semantic_intent(normalized)
+            ]
+            # return_exceptions=True prevents one failed service from crashing the other
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            keyword_results = results[0] if not isinstance(results[0], Exception) else None
+            semantic_results = results[1] if not isinstance(results[1], Exception) else None
+            
+            if isinstance(results[0], Exception):
+                print(f"keyword intent service failed: {results[0]}")
+            if isinstance(results[1], Exception):
+                print(f"semantic intent service failed: {results[1]}")
+                
+            result = await resolve_intent(
+                query=normalized,
+                keyword_results=keyword_results,
+                semantic_results=semantic_results,
+                length_tier=length_tier,
+                ctx=ctx,
+            )
+```
+Simple explanation:
+
+creating a `task` and simply using `.gather()` to invoke those task
+why?
+it execute fast signals concurrently if needed
+inside `gather()` return_exceptions=True 
+because return_exceptions=True prevents one failed service from crashing the other
+
+storing the result[0] and results [1] at respective keyword_results and semantic_results variable.
+
+where
+```
+if isinstance(results[0], Exception):
+    print(f"keyword intent service failed: {results[0]}")
+if isinstance(results[1], Exception):
+    print(f"semantic intent service failed: {results[1]}")
+```
+
+basically if there is exception print that message since we are using return_exeception=True it will return Exception
+so if there is any print the message and return asdict(result)
+
+btw By using asdict(result), you convert that dataclass into a clean dict:
+
+common for reuturning api reonse in fastapi/flask etc, db insertion, logging etc.
+
+
+
