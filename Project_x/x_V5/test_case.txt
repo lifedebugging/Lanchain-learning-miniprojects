@@ -1,4 +1,0 @@
-Game : "Bongula"
-Release date : coming 2028
-Developer : "Rodrick"
-Description : The Bongula game is based on Amazon jungle, it's a adventure, action game with great stories and diverse characters so far it only has Campaign mode later there will be introduction of multiplayer. 
